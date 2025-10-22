@@ -1,8 +1,8 @@
-import { main } from './processor'
+import { main } from "./processor";
 
 try {
-  main(process.argv)
+  main(process.argv);
 } catch (error) {
-  console.error(error)
-  process.exit(1)
+  console.error(error);
+  process.exit(1);
 }
