@@ -10,6 +10,9 @@ interface CommandLineArgs {
   format?: 'json' | 'text'
 }
 
+// 定義輸出格式類型
+type OutputFormat = 'json' | 'text'
+
 /**
  * 主程式入口點
  * @param args 命令列參數陣列
@@ -21,12 +24,10 @@ export async function main(args: string[]): Promise<void> {
     const parsedArgs = parseCommandLineArgs(args)
     console.log('Parsed arguments:', parsedArgs)
     
-    // 測試 JSON 檔案讀取
-    const billInput = await readAndValidateJsonFile(parsedArgs.input)
-    console.log('Successfully read and validated JSON file:', billInput.location)
+    // 處理單一檔案
+    await processSingleFile(parsedArgs.input, parsedArgs.output, parsedArgs.format || 'json')
     
-    // TODO: 實作檔案處理和輸出邏輯
-    console.log('JSON file processing completed!')
+    console.log('File processing completed successfully!')
   } catch (error) {
     console.error('Error:', error instanceof Error ? error.message : String(error))
     process.exit(1)
@@ -65,6 +66,30 @@ function parseCommandLineArgs(args: string[]): CommandLineArgs {
   }
   
   return result as CommandLineArgs
+}
+
+/**
+ * 處理單一檔案
+ * @param inputPath 輸入檔案路徑
+ * @param outputPath 輸出檔案路徑
+ * @param format 輸出格式
+ */
+async function processSingleFile(inputPath: string, outputPath: string, format: OutputFormat): Promise<void> {
+  try {
+    // 讀取並驗證 JSON 檔案
+    const billInput = await readAndValidateJsonFile(inputPath)
+    console.log('Successfully read and validated JSON file:', billInput.location)
+    
+    // 使用核心函數處理分帳
+    const billOutput = splitBill(billInput)
+    console.log('Bill calculation completed')
+    
+    // 寫入輸出檔案
+    await writeOutputFile(outputPath, billOutput, format)
+    console.log(`Successfully processed ${inputPath} -> ${outputPath}`)
+  } catch (error) {
+    throw new Error(`Failed to process file ${inputPath}: ${error instanceof Error ? error.message : String(error)}`)
+  }
 }
 
 /**
@@ -154,4 +179,59 @@ function validateBillInput(data: any): BillInput {
   })
   
   return data as BillInput
+}
+
+/**
+ * 寫入輸出檔案
+ * @param outputPath 輸出檔案路徑
+ * @param billOutput 帳單輸出資料
+ * @param format 輸出格式
+ */
+async function writeOutputFile(outputPath: string, billOutput: BillOutput, format: OutputFormat): Promise<void> {
+  try {
+    // 確保輸出目錄存在
+    const outputDir = path.dirname(outputPath)
+    await fsPromises.mkdir(outputDir, { recursive: true })
+    
+    let content: string
+    
+    if (format === 'json') {
+      content = JSON.stringify(billOutput, null, 2)
+    } else {
+      content = formatTextOutput(billOutput)
+    }
+    
+    await fsPromises.writeFile(outputPath, content, 'utf-8')
+    console.log(`Output written to ${outputPath} (${format} format)`)
+  } catch (error) {
+    if ((error as any).code === 'EACCES') {
+      throw new Error(`Permission denied writing to: ${outputPath}`)
+    } else {
+      throw new Error(`Failed to write output file: ${error instanceof Error ? error.message : String(error)}`)
+    }
+  }
+}
+
+/**
+ * 格式化文字輸出
+ * @param billOutput 帳單輸出資料
+ * @returns 格式化的文字內容
+ */
+function formatTextOutput(billOutput: BillOutput): string {
+  const lines: string[] = []
+  
+  lines.push('=== 聚餐分帳結果 ===')
+  lines.push(`日期: ${billOutput.date}`)
+  lines.push(`地點: ${billOutput.location}`)
+  lines.push(`小計: $${billOutput.subTotal.toFixed(2)}`)
+  lines.push(`小費: $${billOutput.tip.toFixed(2)}`)
+  lines.push(`總計: $${billOutput.totalAmount.toFixed(2)}`)
+  lines.push('')
+  lines.push('=== 個人分帳 ===')
+  
+  billOutput.items.forEach(item => {
+    lines.push(`${item.name}: $${item.amount.toFixed(2)}`)
+  })
+  
+  return lines.join('\n')
 }
