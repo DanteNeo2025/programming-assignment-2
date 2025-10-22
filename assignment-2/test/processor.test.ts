@@ -32,13 +32,13 @@ describe("Processor", () => {
     });
 
     it("保持計算結果的一致性", () => {
-      let assignment_1_file = "../assignment-1/src/core.ts";
-      let assignment_2_file = "../assignment-2/src/core.ts";
+      let assignment_2_ts_file = "../assignment-2.ts";
+      let core_ts_file = "../src/core.ts";
 
-      let assignment_1_content = fs.readFileSync(assignment_1_file, "utf-8");
-      let assignment_2_content = fs.readFileSync(assignment_2_file, "utf-8");
+      let assignment_2_content = fs.readFileSync(assignment_2_ts_file, "utf-8");
+      let core_content = fs.readFileSync(core_ts_file, "utf-8");
 
-      expect(assignment_1_content).to.equals(assignment_2_content);
+      expect(assignment_2_content).to.equals(core_content);
     });
   });
 
