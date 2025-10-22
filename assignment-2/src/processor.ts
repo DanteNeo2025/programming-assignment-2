@@ -24,8 +24,18 @@ export async function main(args: string[]): Promise<void> {
     const parsedArgs = parseCommandLineArgs(args)
     console.log('Parsed arguments:', parsedArgs)
     
-    // 處理單一檔案
-    await processSingleFile(parsedArgs.input, parsedArgs.output, parsedArgs.format || 'json')
+    // 判斷是單一檔案還是批次處理
+    const inputStats = await fsPromises.stat(parsedArgs.input)
+    
+    if (inputStats.isFile()) {
+      // 單一檔案處理
+      await processSingleFile(parsedArgs.input, parsedArgs.output, parsedArgs.format || 'json')
+    } else if (inputStats.isDirectory()) {
+      // 批次處理
+      await processBatchFiles(parsedArgs.input, parsedArgs.output, parsedArgs.format || 'json')
+    } else {
+      throw new Error(`Input path is neither a file nor a directory: ${parsedArgs.input}`)
+    }
     
     console.log('File processing completed successfully!')
   } catch (error) {
@@ -89,6 +99,77 @@ async function processSingleFile(inputPath: string, outputPath: string, format: 
     console.log(`Successfully processed ${inputPath} -> ${outputPath}`)
   } catch (error) {
     throw new Error(`Failed to process file ${inputPath}: ${error instanceof Error ? error.message : String(error)}`)
+  }
+}
+
+/**
+ * 批次處理多個檔案
+ * @param inputDir 輸入目錄路徑
+ * @param outputDir 輸出目錄路徑
+ * @param format 輸出格式
+ */
+async function processBatchFiles(inputDir: string, outputDir: string, format: OutputFormat): Promise<void> {
+  try {
+    console.log(`Starting batch processing: ${inputDir} -> ${outputDir}`)
+    
+    // 確保輸出目錄存在
+    await fsPromises.mkdir(outputDir, { recursive: true })
+    
+    // 讀取輸入目錄中的所有檔案
+    const files = await fsPromises.readdir(inputDir)
+    
+    // 過濾出 JSON 檔案
+    const jsonFiles = files.filter(file => path.extname(file).toLowerCase() === '.json')
+    
+    if (jsonFiles.length === 0) {
+      console.log('No JSON files found in input directory')
+      return
+    }
+    
+    console.log(`Found ${jsonFiles.length} JSON files to process:`, jsonFiles)
+    
+    // 處理每個 JSON 檔案
+    const results = await Promise.allSettled(
+      jsonFiles.map(async (file) => {
+        const inputPath = path.join(inputDir, file)
+        const outputFileName = path.basename(file, '.json') + (format === 'json' ? '.json' : '.txt')
+        const outputPath = path.join(outputDir, outputFileName)
+        
+        await processSingleFile(inputPath, outputPath, format)
+        return { file, success: true }
+      })
+    )
+    
+    // 報告處理結果
+    const successful = results.filter(result => result.status === 'fulfilled').length
+    const failed = results.filter(result => result.status === 'rejected').length
+    
+    console.log(`\n=== Batch Processing Summary ===`)
+    console.log(`Total files processed: ${jsonFiles.length}`)
+    console.log(`Successful: ${successful}`)
+    console.log(`Failed: ${failed}`)
+    
+    // 顯示失敗的檔案
+    if (failed > 0) {
+      console.log(`\n=== Failed Files ===`)
+      results.forEach((result, index) => {
+        if (result.status === 'rejected') {
+          console.error(`❌ ${jsonFiles[index]}: ${result.reason}`)
+        }
+      })
+    }
+    
+    // 顯示成功的檔案
+    if (successful > 0) {
+      console.log(`\n=== Successfully Processed Files ===`)
+      results.forEach((result, index) => {
+        if (result.status === 'fulfilled') {
+          console.log(`✅ ${jsonFiles[index]}`)
+        }
+      })
+    }
+  } catch (error) {
+    throw new Error(`Failed to process batch files: ${error instanceof Error ? error.message : String(error)}`)
   }
 }
 
