@@ -1,6 +1,6 @@
 # Assignment 2 - 聚餐分帳擴展與檔案處理
 
-學生名稱：
+學生名稱： 姚逸
 
 ## 使用說明
 
@@ -38,19 +38,3 @@ npx ts-node src/cli.ts --input=sample-data/input-dir/ --output=sample-data/outpu
   - `single-bill.json` - 單筆帳單範例
   - `input-dir/` - 批次處理輸入目錄
   - `output-dir/` - 批次處理輸出目錄
-
-## 實作要求
-
-請根據 `assignment-2.md` 的要求實作 `src/processor.ts` 中的各個函數：
-
-1. **基本功能**：
-
-   - 命令列參數解析
-   - 檔案讀取和 JSON 解析
-   - 檔案寫入（JSON 和文字格式）
-   - 錯誤處理
-
-2. **加分項目**：
-   - 批次處理能力
-   - 非同步檔案處理（使用 Promise-based fs API）
-   - 文字格式輸出
