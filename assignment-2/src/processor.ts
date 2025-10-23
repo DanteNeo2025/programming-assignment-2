@@ -74,7 +74,7 @@ export async function main(args: string[]): Promise<void> {
  * @param args 命令列參數陣列
  * @returns 解析後的參數物件
  */
-function parseCommandLineArgs(args: string[]): CommandLineArgs {
+export function parseCommandLineArgs(args: string[]): CommandLineArgs {
   const result: Partial<CommandLineArgs> = {}
   
   // 過濾掉 node 和腳本路徑參數
@@ -302,7 +302,7 @@ async function processBatchFiles(inputDir: string, outputDir: string, format: Ou
  * @param filePath 檔案路徑
  * @returns 驗證後的帳單輸入資料
  */
-async function readAndValidateJsonFile(filePath: string): Promise<BillInput> {
+export async function readAndValidateJsonFile(filePath: string): Promise<BillInput> {
   try {
     // 檢查檔案是否存在
     await fsPromises.access(filePath, fs.constants.F_OK)
