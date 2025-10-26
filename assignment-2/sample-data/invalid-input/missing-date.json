@@ -1,0 +1,11 @@
+{
+  "location": "測試餐廳",
+  "tipPercentage": 10,
+  "items": [
+    {
+      "name": "測試菜品",
+      "price": 100,
+      "isShared": true
+    }
+  ]
+}
